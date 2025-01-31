@@ -8,7 +8,7 @@ T = 1/fc;                       % Período do sinal
 phi = 0;                        % Fase do sinal (0 radianos)
 A = 3;                          % Amplitude do sinal
 amostras_N = 20;                % Quantidade de amostras por período da portadora
-periodos_N = 3;                 % Quantidade de períodos por pulso
+periodos_N = 5;                 % Quantidade de períodos por pulso
 N = amostras_N * periodos_N;    % Quantiadde de amostras por pulso
 M = 2;
 
