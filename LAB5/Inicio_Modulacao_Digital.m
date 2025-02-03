@@ -7,9 +7,9 @@ fc = 50;                        % Frequência do sinal (1000 Hz)
 T = 1/fc;                       % Período do sinal
 phi = 0;                        % Fase do sinal (0 radianos)
 A = 3;                          % Amplitude do sinal
-amostras_N = 20;                % Quantidade de amostras por período da portadora
-periodos_N = 5;                 % Quantidade de períodos por pulso
-N = amostras_N * periodos_N;    % Quantiadde de amostras por pulso
+amostras_periodo = 20;                % Quantidade de amostras por período da portadora
+periodos_pulso_NRZ = 5;                 % Quantidade de períodos por pulso
+N = amostras_periodo * periodos_pulso_NRZ;    % Quantiadde de amostras por pulso
 M = 2;
 
 % Fazendo o RZ
@@ -20,7 +20,7 @@ info_RZ = filter(filtroRZ,1,info_up) * A;
 
 % Definindo parâmetros de amostragem e criando o vetor tempo
 
-fs = amostras_N * fc;           % Frequência de amostragem (40 vezes a frequência do sinal)
+fs = amostras_periodo * fc;           % Frequência de amostragem (40 vezes a frequência do sinal)
 ts = 1/fs;
 t = (0:length(info_RZ)-1) * ts;
 
