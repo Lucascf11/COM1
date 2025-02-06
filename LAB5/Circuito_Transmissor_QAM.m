@@ -24,7 +24,7 @@ t = [0:ts:1-ts];
 info_DEC = bi2de(reshape(info, bits, [])', 'left-msb')';
 
 % Realizando modulação QAM em 16-QAM
-sinalQAM = qammod(info_DEC,M);
+sinalQAM = qammod(info_DEC,M).';
 
 % Separando parte real (inphase) e imagíaria (quadratura)
 sinalQAM_real = real(sinalQAM);
