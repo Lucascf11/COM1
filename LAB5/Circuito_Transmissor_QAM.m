@@ -7,7 +7,7 @@ info = [1 0 1 1 0 0 0 0 0 1 1 0 0 0 1 0];
 bits = log2(M);
 fc = 10;
 
-periodos_pulso_NRZ = 50;
+periodos_pulso_NRZ = 4;
 amostras_periodo = 10;
 N = periodos_pulso_NRZ * amostras_periodo;
 A = 1;
