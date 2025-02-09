@@ -2,19 +2,26 @@ close all; clear all; clc;
 pkg load signal;
 pkg load communications;
 
-M = 16;
-info = [1 0 1 1 0 0 0 0 0 1 1 0 0 0 1 0];
-bits = log2(M);
-fc = 10;
 
-periodos_pulso_NRZ = 4;
-amostras_periodo = 10;
+%---------------------------------------------------------------------------------------------------------------------
+%                                       Codificação do Transmissor
+%---------------------------------------------------------------------------------------------------------------------
+M = 16;
+info = randi([0, 1], 1, M); % Gerando informação binária aleatória de M bits
+bits = log2(M); % Definindo bits por símbolo como log na base 2 de M
+fc = 10; % Frequência da portadora
+
+% Definindo parâmetros de representação de pulsos e de amostragens
+periodos_pulso_NRZ = 400;
+amostras_periodo = 20;
 N = periodos_pulso_NRZ * amostras_periodo;
 A = 1;
 
+% Definindo taxa de bits e tempo de símbolos
 Rb = M;
 Rs = Rb/bits;
 
+% Definindo frequência de amostragem e vetor tempo
 fs = Rs * N;
 ts = 1/fs;
 t = [0:ts:1-ts];
@@ -23,7 +30,7 @@ t = [0:ts:1-ts];
 % Passando pelo conversor decimal
 info_DEC = bi2de(reshape(info, bits, [])', 'left-msb')';
 
-% Realizando modulação QAM em 16-QAM
+% Realizando modulação QAM em M-QAM
 sinalQAM = qammod(info_DEC,M).';
 
 % Separando parte real (inphase) e imagíaria (quadratura)
@@ -35,6 +42,7 @@ sinalQAM_real_up = upsample(sinalQAM_real,N);
 sinalQAM_imag_up = upsample(sinalQAM_imag,N);
 filtroRZ = ones(1,N);
 
+% Realizando codificação NRZ da quadradtura e fase do QAM
 sinalQAM_real_RZ = filter(filtroRZ,1,sinalQAM_real_up);
 sinalQAM_imag_RZ = filter(filtroRZ,1,sinalQAM_imag_up);
 
@@ -42,13 +50,16 @@ sinalQAM_imag_RZ = filter(filtroRZ,1,sinalQAM_imag_up);
 cosseno = A*cos(2 * pi * fc * t);
 seno = A*sin(2 * pi * fc * t);
 
-% Realizando as multiplicados
+% Realizando as multiplicações
 sinalQAM_real_RZ_deslocado = cosseno .* sinalQAM_real_RZ;
 sinalQAM_imag_RZ_deslocado = -seno .* sinalQAM_imag_RZ;
 
+% Obtendo o sinal final
 sinal_final_tx = sinalQAM_real_RZ_deslocado + sinalQAM_imag_RZ_deslocado;
 
-% Plots da transmissão
+%---------------------------------------------------------------------------------------------------------------------
+%                                       Plots do Transmissor
+%---------------------------------------------------------------------------------------------------------------------
 
 
 figure(1)
@@ -71,67 +82,52 @@ title('sinal final');
 xlabel('Tempo amostral'); ylabel('Amplitude');
 
 
-%-----------------------------------------------------------------------------------------------------------------
-% Realizando a recepção
-%-----------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------------------------
+%                                       Codificação o Receptor
+%---------------------------------------------------------------------------------------------------------------------
 
 
-% Recebendo o sinal final do transmissor
 sinal_inicial_rx = sinal_final_tx;
 
-% Colocando o sinal em banda base
+% 1. Multiplicação para banda base
 sinal_rx_real = cosseno .* sinal_inicial_rx;
 sinal_rx_imag = -seno .* sinal_inicial_rx;
 
-% Preparando o filtro passa baixas
-filtro_passa_baixas =  fir1(10, (fc*2)/fs);
+% 2. Filtro casado
+filtro_rx = fliplr(filtroRZ);
+sinal_rx_real_filtrado_casado = filter(filtro_rx, 1, sinal_rx_real)/sum(filtroRZ);
+sinal_rx_imag_filtrado_casado = filter(filtro_rx, 1, sinal_rx_imag)/sum(filtroRZ);
 
+% 3. Filtro passa-baixa
+filtro_passa_baixas = fir1(100, (fc*2) / fs);  % Ordem 100 para melhor resposta
+sinal_rx_real_filtrado = filter(filtro_passa_baixas, 1, sinal_rx_real_filtrado_casado);
+sinal_rx_imag_filtrado = filter(filtro_passa_baixas, 1, sinal_rx_imag_filtrado_casado);
 
-% Filtrando o sinal para deixar fidedigno ao original em banda base
-sinal_rx_real_filtrado = filter(filtro_passa_baixas, 1, sinal_rx_real); 
-sinal_rx_imag_filtrado = filter(filtro_passa_baixas, 1, sinal_rx_imag); 
+% 4. Amostragem (Multiplica-se por 2 para compensar a perca de potência pela metade quando passa pelo filtro casado)
+sinal_rx_real_amostrado = 2*sinal_rx_real_filtrado(N:N:end);
+sinal_rx_imag_amostrado = 2*sinal_rx_imag_filtrado(N:N:end);
 
-% Realizando as amostragens
-sinal_rx_real_amostrado = sinal_rx_real_filtrado(N:N:end);
-sinal_rx_imag_amostrado = sinal_rx_imag_filtrado(N:N:end);
+% Limiarizando o sinal
 
+% Parte real
+sinal_rx_real_amostrado(sinal_rx_real_amostrado <= -2) = -3;
+sinal_rx_real_amostrado(sinal_rx_real_amostrado > -2 & sinal_rx_real_amostrado <= 0) = -1;
+sinal_rx_real_amostrado(sinal_rx_real_amostrado > 0 & sinal_rx_real_amostrado <= 2) = 1;
+sinal_rx_real_amostrado(sinal_rx_real_amostrado > 2) = 3;
 
-% Plotando tudo no domínio da frequência
+% Parte imaginária
+sinal_rx_imag_amostrado(sinal_rx_imag_amostrado <= -2) = -3;
+sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > -2 & sinal_rx_imag_amostrado <= 0) = -1;
+sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > 0 & sinal_rx_imag_amostrado <= 2) = 1;
+sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > 2) = 3;
 
-% Vetor da frequência:
-df = length(t) / (fs+1);
-f = -fs/2 : df : fs/2-1;
+% Reconstruindo o sinal QAM a partir das partes real e imaginária
+sinal_rx_reconstituido = sinal_rx_real_amostrado + 1i * sinal_rx_imag_amostrado;
 
-X_ftx = fft(sinal_final_tx)/length(sinal_final_tx);
-X_ftx = fftshift(X_ftx);
+% Realizando demodulação QAM do sinal e retornando-o para o diagrama de constelação QAM
+sinalQAM_demod = qamdemod(sinal_rx_reconstituido,M);
 
-figure(3)
-plot(f,abs(X_ftx));
-xlim([-300 300]);
-ylim([0 4]);
-ylabel('Amplitude (Volts)');
-xlabel('f(Hz)');
-title('Sinal x1 em função da frequência');
-grid on;
-
-
-
-
-
-
-# % Plots da recepção
-# figure(3)
-# % Plot do RZ do real
-# subplot(211)
-# plot(t, sinal_rx_real_filtrado);
-# title('RZ Real');
-# xlabel('Tempo amostral'); ylabel('Amplitude');
-# ylim([-4 4]);
-# % Plot do RZ do imaginário
-# subplot(212)
-# plot(t, sinal_rx_imag_filtrado);
-# title('RZ Imaginário');
-# xlabel('Tempo amostral'); ylabel('Amplitude');
-# ylim([-4 4]);
+info_BIN = de2bi(reshape(sinalQAM_demod, bits, [])', 'left-msb')';
+info_BIN = info_BIN(:)';  % Isso vai garantir que `info_BIN` seja um vetor linha
 
 
