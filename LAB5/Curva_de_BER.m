@@ -2,6 +2,9 @@ clear all
 close all
 clc
 
+pkg load signal;
+pkg load communications;
+
 function [sinal_normalizado] = modnorm(sinal_QAM)
     % Calcula a energia média dos símbolos da constelação
     energia_media = mean(abs(sinal_QAM).^2);
@@ -25,7 +28,7 @@ sinal_QAM_normalizado = modnorm(sinal_QAM);
 % Função personalizada para calcular erros de bit
 for SNR = 0:LIMIT_SNR
     SNR
-    sinal_QAM_ruido = awgn(sinal_QAM_normalizado, SNR,'measured');
+    sinal_QAM_ruido = awgn(sinal_QAM_normalizado, SNR);
     info_demod = qamdemod(sinal_QAM_ruido,M);
     [numErrors(SNR+1),taxa(SNR+1)] = symerr(info,info_demod);
 end
