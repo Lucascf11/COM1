@@ -16,11 +16,12 @@ function [sinal_normalizado] = modnorm(sinal_QAM)
   sinal_normalizado = sinal_QAM * fator_normalizacao;
 end  
 
-LIMIT_SNR = 10;
+LIMIT_SNR = 40;
 
-M = 16;
+M = 64;
 Simbolos = 100000;
 info = randint(1,Simbolos,M); % Gerando informação binária aleatória de M bits
+info = info(:);
 sinal_QAM = qammod(info,M);
 sinal_QAM_normalizado = modnorm(sinal_QAM);
 
@@ -30,16 +31,16 @@ for SNR = 0:LIMIT_SNR
     SNR
     sinal_QAM_ruido = awgn(sinal_QAM_normalizado, SNR, 'measured');
     info_demod = qamdemod(sinal_QAM_ruido,M);
-    [numErrors(SNR+1),taxa(SNR+1)] = symerr(info,info_demod);
+    numErrors(SNR+1) = sum(info ~= info_demod); % Conta os símbolos errados
+    taxa(SNR+1) = numErrors(SNR+1) / Simbolos; % Calcula a SER
+
 end
 
-figure(1); hold on;
-semilogy([0:LIMIT_SNR], taxa)
-title('SER vs SNR');
-xlabel('SNR (dB)');
-ylabel('SER');
-grid on
+figure(1); 
+hold on; % Mantém o gráfico atual para adicionar novos dados
 
-
-# Fazer a normalizaçãodo QAM
-# modnorm
+semilogy(0:LIMIT_SNR, taxa, 'o-', 'LineWidth', 2); % Gráfico semilogarítmico
+title('SER vs SNR'); % Título do gráfico
+xlabel('SNR (dB)'); % Rótulo do eixo x
+ylabel('SER'); % Rótulo do eixo y
+grid on; % Ativa a grade no gráfico

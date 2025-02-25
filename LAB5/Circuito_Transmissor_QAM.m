@@ -7,8 +7,9 @@ pkg load communications;
 %                                       Codificação do Transmissor
 %---------------------------------------------------------------------------------------------------------------------
 M = 16;
-info = randi([0, 1], 1, M); % Gerando informação binária aleatória de M bits
-bits = log2(M); % Definindo bits por símbolo como log na base 2 de M
+info = [1   1   0   0   0   1   1   1   0   1   0   0   1   0   1   0];
+% info = randi([0, 1], 1, M); % Gerando informação binária aleatória de M bits
+bits = log2(length(info)); % Definindo bits por símbolo como log na base 2 de M
 fc = 10; % Frequência da portadora
 
 % Definindo parâmetros de representação de pulsos e de amostragens
@@ -66,19 +67,19 @@ figure(1)
 % Plot do RZ do real
 subplot(211)
 plot(t, sinalQAM_real_RZ);
-title('RZ Real');
-xlabel('Tempo amostral'); ylabel('Amplitude');
+title('Componente em Fase (Parte Real)');
+xlabel('Tempo amostral'); ylabel('Magnitude');
 ylim([-4 4]);
 % Plot do RZ do imaginário
 subplot(212)
 plot(t, sinalQAM_imag_RZ);
-title('RZ Imaginário');
-xlabel('Tempo amostral'); ylabel('Amplitude');
+title('Componente em Quadratura (Parte Imaginária)');
+xlabel('Tempo amostral'); ylabel('Magnitude');
 ylim([-4 4]);
 
 figure(2)
 plot(t,sinal_final_tx);
-title('sinal final');
+title('Sinal Transmitido');
 xlabel('Tempo amostral'); ylabel('Amplitude');
 
 
@@ -121,13 +122,34 @@ sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > -2 & sinal_rx_imag_amostrado <
 sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > 0 & sinal_rx_imag_amostrado <= 2) = 1;
 sinal_rx_imag_amostrado(sinal_rx_imag_amostrado > 2) = 3;
 
+
 % Reconstruindo o sinal QAM a partir das partes real e imaginária
 sinal_rx_reconstituido = sinal_rx_real_amostrado + 1i * sinal_rx_imag_amostrado;
 
 % Realizando demodulação QAM do sinal e retornando-o para o diagrama de constelação QAM
 sinalQAM_demod = qamdemod(sinal_rx_reconstituido,M);
 
-info_BIN = de2bi(reshape(sinalQAM_demod, bits, [])', 'left-msb')';
-info_BIN = info_BIN(:)';  % Isso vai garantir que `info_BIN` seja um vetor linha
+info_final_recepcao = de2bi(reshape(sinalQAM_demod, bits, [])', 'left-msb')';
+info_final_recepcao = info_final_recepcao(:)';  % Isso vai garantir que `info_BIN` seja um vetor linha
 
 
+%---------------------------------------------------------------------------------------------------------------------
+%                                       Plots do Receptor
+%---------------------------------------------------------------------------------------------------------------------
+
+t_rx = linspace(0, 1, length(sinal_rx_real_amostrado));
+
+
+figure(3)
+% Plot do RZ do real
+subplot(211)
+plot(t_rx, sinal_rx_real_amostrado);
+title('Componente em Fase recuperada (Parte Real)');
+xlabel('Tempo amostral'); ylabel('Magnitude');
+ylim([-4 4]);
+% Plot do RZ do imaginário
+subplot(212)
+plot(t_rx, sinal_rx_imag_amostrado);
+title('Componente em Quadratura recuperada (Parte Imaginária)');
+xlabel('Tempo amostral'); ylabel('Magnitude');
+ylim([-4 4]);
